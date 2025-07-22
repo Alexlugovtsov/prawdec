@@ -7,9 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		BB6F039A2CF4A4B800C8A48B /* AVFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BB6F03992CF4A4B800C8A48B /* AVFoundation.framework */; };
-		BB6F039C2CF4A4C100C8A48B /* CoreVideo.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BB6F039B2CF4A4C100C8A48B /* CoreVideo.framework */; };
-		BB6F039E2CF4A4C700C8A48B /* CoreMedia.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BB6F039D2CF4A4C700C8A48B /* CoreMedia.framework */; };
+		2C0E7EF22E30161E001C41D2 /* AVFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BB6F03992CF4A4B800C8A48B /* AVFoundation.framework */; };
+		2C0E7EF52E30161F001C41D2 /* CoreMedia.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BB6F039D2CF4A4C700C8A48B /* CoreMedia.framework */; };
+		2C0E7EF72E301621001C41D2 /* CoreVideo.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BB6F039B2CF4A4C100C8A48B /* CoreVideo.framework */; };
 		BB6F03A02CF4A4E700C8A48B /* libtiff.a in Frameworks */ = {isa = PBXBuildFile; fileRef = BB6F039F2CF4A4E700C8A48B /* libtiff.a */; };
 		BBF2217E2DBB4FC10070F0A0 /* README.md in Resources */ = {isa = PBXBuildFile; fileRef = BBF2217D2DBB4FC10070F0A0 /* README.md */; };
 /* End PBXBuildFile section */
@@ -39,10 +39,10 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				2C0E7EF52E30161F001C41D2 /* CoreMedia.framework in Frameworks */,
+				2C0E7EF22E30161E001C41D2 /* AVFoundation.framework in Frameworks */,
 				BB6F03A02CF4A4E700C8A48B /* libtiff.a in Frameworks */,
-				BB6F039E2CF4A4C700C8A48B /* CoreMedia.framework in Frameworks */,
-				BB6F039C2CF4A4C100C8A48B /* CoreVideo.framework in Frameworks */,
-				BB6F039A2CF4A4B800C8A48B /* AVFoundation.framework in Frameworks */,
+				2C0E7EF72E301621001C41D2 /* CoreVideo.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -291,17 +291,21 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = prawdec/prawdec.entitlements;
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "-";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"prawdec/Preview Content\"";
+				DEVELOPMENT_TEAM = "";
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				ENABLE_USER_SELECTED_FILES = "";
 				GENERATE_INFOPLIST_FILE = YES;
 				HEADER_SEARCH_PATHS = /opt/homebrew/include;
+				INFOPLIST_KEY_CFBundleDisplayName = "ProResRAW-DNG";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -312,6 +316,7 @@
 					/opt/homebrew/Cellar/libtiff/4.7.0/lib,
 				);
 				MARKETING_VERSION = 1.0;
+				MARKETPLACES = "";
 				PRODUCT_BUNDLE_IDENTIFIER = moe.henri.prawdec;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -326,17 +331,21 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = prawdec/prawdec.entitlements;
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "-";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"prawdec/Preview Content\"";
+				DEVELOPMENT_TEAM = "";
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				ENABLE_USER_SELECTED_FILES = "";
 				GENERATE_INFOPLIST_FILE = YES;
 				HEADER_SEARCH_PATHS = /opt/homebrew/include;
+				INFOPLIST_KEY_CFBundleDisplayName = "ProResRAW-DNG";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -347,6 +356,8 @@
 					/opt/homebrew/Cellar/libtiff/4.7.0/lib,
 				);
 				MARKETING_VERSION = 1.0;
+				MARKETPLACES = "";
+				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = moe.henri.prawdec;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;

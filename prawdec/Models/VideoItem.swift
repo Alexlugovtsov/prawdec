@@ -9,11 +9,11 @@ import Foundation
 import Combine
 
 enum ConversionStatus: String {
-    case pending = "待处理"
-    case converting = "转换中"
-    case completed = "完成"
-    case failed = "失败"
-    case cancelled = "已取消"
+    case pending = "Pending"
+    case converting = "Converting"
+    case completed = "Completed"
+    case failed = "Failed"
+    case cancelled = "Cancelled"
 }
 
 class VideoItem: ObservableObject, Identifiable, Hashable {

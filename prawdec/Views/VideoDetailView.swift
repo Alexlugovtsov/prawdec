@@ -15,12 +15,12 @@ struct VideoDetailView: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
-            Text("视频属性")
+            Text("Video Properties")
                 .font(.title)
                 .padding(.top)
             
             HStack {
-                Text("文件名")
+                Text("File Name")
                     .bold()
                 Text(video.url.lastPathComponent)
                     .lineLimit(1)
@@ -28,7 +28,7 @@ struct VideoDetailView: View {
             }
             
             HStack {
-                Text("输出目录")
+                Text("Output Directory")
                     .bold()
                 Button(action: {
                     chooseOutputDirectory()
@@ -46,10 +46,10 @@ struct VideoDetailView: View {
 //                    Image(systemName: "folder")
 //                }
 //                .buttonStyle(BorderlessButtonStyle())
-//                .help("选择输出目录")
+//                .help("Choose Output Directory")
             }
 //            HStack {
-//                Toggle("导出音频", isOn: $video.extractAudio)
+//                Toggle("Export Audio", isOn: $video.extractAudio)
 //                                .toggleStyle(CheckboxToggleStyle())
 //                                .padding()
 //            }
@@ -58,29 +58,29 @@ struct VideoDetailView: View {
         }
         .padding()
         .alert(isPresented: $showingErrorAlert) {
-            Alert(title: Text("错误"),
+            Alert(title: Text("Error"),
                   message: Text(errorMessage),
-                  dismissButton: .default(Text("确定")))
+                  dismissButton: .default(Text("OK")))
         }
     }
     
     private func chooseOutputDirectory() {
         directoryPicker.pickDirectory { url in
             if let url = url {
-                // 开始访问安全范围
+                // Start accessing security-scoped resource
                 guard url.startAccessingSecurityScopedResource() else {
-                    print("无法访问所选目录的安全范围")
-                    errorMessage = "无法访问所选目录的安全范围。"
+                    print("Unable to access the security scope of the selected directory")
+                    errorMessage = "Unable to access the security scope of the selected directory."
                     showingErrorAlert = true
                     return
                 }
-                // 更新输出目录
+                // Update output directory
                 DispatchQueue.main.async {
                     video.outputDirectory = url.path
                 }
-                // 停止访问安全范围
+                // Stop accessing security scope
                 url.stopAccessingSecurityScopedResource()
-                print("输出目录已更新: \(video.outputDirectory)")
+                print("Output directory updated: \(video.outputDirectory)")
             }
         }
     }

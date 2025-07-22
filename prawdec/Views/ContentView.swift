@@ -25,7 +25,7 @@ struct ContentView: View {
                     }) {
                         HStack {
                             Image(systemName: "plus")
-                            Text("添加视频")
+                            Text("Add Video")
                         }
                     }
                     .padding()
@@ -40,7 +40,7 @@ struct ContentView: View {
                     }) {
                         HStack {
                             Image(systemName: "play.circle")
-                            Text("开始转换")
+                            Text("Start Conversion")
                         }
                     }
                     .padding()
@@ -53,7 +53,7 @@ struct ContentView: View {
                     }) {
                         HStack {
                             Image(systemName: "stop.circle")
-                            Text("中止转换")
+                            Text("Cancel Conversion")
                         }
                     }
                     .padding()
@@ -84,7 +84,7 @@ struct ContentView: View {
                 VideoDetailView(video: video, directoryPicker: directoryPicker)
                     .frame(minWidth: 300, maxWidth: 300, maxHeight: .infinity)
             } else {
-                Text("选择一个视频以查看和编辑其属性")
+                Text("Select a video to view and edit its properties")
                     .foregroundColor(.gray)
                     .frame(minWidth: 300, maxWidth: 300, maxHeight: .infinity)
             }
@@ -99,14 +99,14 @@ struct ContentView: View {
             case .success(let urls):
                 viewModel.addVideos(urls: urls)
             case .failure(let error):
-                errorMessage = "文件导入失败: \(error.localizedDescription)"
+                errorMessage = "File import failed: \(error.localizedDescription)"
                 showingErrorAlert = true
             }
         }
         .alert(isPresented: $showingErrorAlert) {
-            Alert(title: Text("错误"),
+            Alert(title: Text("Error"),
                   message: Text(errorMessage),
-                  dismissButton: .default(Text("确定")))
+                  dismissButton: .default(Text("OK")))
         }
     }
 }

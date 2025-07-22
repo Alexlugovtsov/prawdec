@@ -66,7 +66,7 @@ void multiplyMatrixVector3(const float32_t m[9], const float32_t v[3], float32_t
 }
 
 void getWhitePointFromCCT(float32_t cct, float32_t whitePoint[3]) {
-    // 使用McCamy公式近似计算xy色度坐标，然后转换为XYZ
+    // Approximate xy chromaticity coordinates using McCamy's formula, then convert to XYZ
     float32_t cct2 = cct * cct;
     float32_t cct3 = cct2 * cct;
     float32_t x = 0.0f;
@@ -83,14 +83,14 @@ void getWhitePointFromCCT(float32_t cct, float32_t whitePoint[3]) {
     } else if (cct > 4000 && cct <= 25000) {
         y = 3.0817580f * x * x * x - 5.8733867f * x * x + 3.75112997f * x - 0.37001483f;
     }
-    // 转换为XYZ，假设Y=1.0
+    // Convert to XYZ, assuming Y=1.0
     whitePoint[0] = x / y; // X
     whitePoint[1] = 1.0f;  // Y
     whitePoint[2] = (1.0f - x - y) / y; // Z
 }
 
 void calculateCATMatrixFromCCT(float32_t sourceCCT, float32_t destCCT, float32_t catMatrix[9]) {
-    // 获取源和目标白点
+    // Get source and destination white points
     float32_t sourceWhitePoint[3];
     float32_t destWhitePoint[3];
     getWhitePointFromCCT(sourceCCT, sourceWhitePoint);
@@ -323,24 +323,27 @@ void calculateCATMatrixFromCCT(float32_t sourceCCT, float32_t destCCT, float32_t
                     
                     // Set TIFF fields
                     TIFFSetField(tif, TIFFTAG_SUBFILETYPE, 0);
-                    TIFFSetField(tif, TIFFTAG_IMAGEWIDTH, width + [extendedPixelsLeft unsignedIntValue] + [extendedPixelsRight unsignedIntValue]);
-                    TIFFSetField(tif, TIFFTAG_IMAGELENGTH, height + [extendedPixelsTop unsignedIntValue] + [extendedPixelsBottom unsignedIntValue]);
+                    TIFFSetField(tif, TIFFTAG_IMAGEWIDTH, width);
+                    TIFFSetField(tif, TIFFTAG_IMAGELENGTH, height);
                     TIFFSetField(tif, TIFFTAG_BITSPERSAMPLE, 16);
                     TIFFSetField(tif, TIFFTAG_SAMPLESPERPIXEL, 1);
                     TIFFSetField(tif, TIFFTAG_COMPRESSION, COMPRESSION_NONE);
                     TIFFSetField(tif, TIFFTAG_PHOTOMETRIC, PHOTOMETRIC_CFA);
                     TIFFSetField(tif, TIFFTAG_ORIENTATION, ORIENTATION_TOPLEFT);
                     TIFFSetField(tif, TIFFTAG_PLANARCONFIG, PLANARCONFIG_CONTIG);
-                    TIFFSetField(tif, TIFFTAG_SOFTWARE, "prawdec by Henri v0.1.2");
+                    TIFFSetField(tif, TIFFTAG_SOFTWARE, "Atomos Ninja V");
+                    TIFFSetField(tif, TIFFTAG_DATETIME, [[NSDate date] descriptionWithLocale:nil]);
                     if (make) {
                         TIFFSetField(tif, TIFFTAG_MAKE, [make UTF8String]);
                     }
                     if (model) {
                         TIFFSetField(tif, TIFFTAG_MODEL, [model UTF8String]);
                     }
-                    //                    if (make && model) {
-                    //                        TIFFSetField(tif, TIFFTAG_UNIQUECAMERAMODEL, [[make stringByAppendingString:model] UTF8String]);
-                    //                    }
+                                       if (make && model) {
+                                           NSString *uniqueModel = [NSString stringWithFormat:@"%@ %@", make, model];
+                                           TIFFSetField(tif, TIFFTAG_UNIQUECAMERAMODEL, [uniqueModel UTF8String]);
+                                       }
+                    // TIFFSetField(tif, TIFFTAG_UNIQUECAMERAMODEL, "Blackmagic URSA"); //Fake model for testing ISO
                     
                     uint32_t activeArea[4] = {
                         [extendedPixelsTop unsignedIntValue],

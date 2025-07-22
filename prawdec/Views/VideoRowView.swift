@@ -41,7 +41,7 @@ struct VideoRowView: View {
                         .foregroundColor(.red)
                 }
                 .buttonStyle(BorderlessButtonStyle())
-                .help("取消转换")
+                .help("Cancel Conversion")
             } else {
                 Button(action: {
                     removeAction()
@@ -50,7 +50,7 @@ struct VideoRowView: View {
                         .foregroundColor(.red)
                 }
                 .buttonStyle(BorderlessButtonStyle())
-                .help("删除任务")
+                .help("Delete Task")
             }
         }
         .padding(5)

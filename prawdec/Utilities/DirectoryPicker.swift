@@ -15,8 +15,8 @@ class DirectoryPicker: ObservableObject {
             panel.canChooseFiles = false
             panel.canChooseDirectories = true
             panel.allowsMultipleSelection = false
-            panel.title = "选择输出目录"
-            panel.prompt = "选择"
+            panel.title = "Select"
+            panel.prompt = "Prompt"
             panel.begin { response in
                 if response == .OK {
                     completion(panel.url)
