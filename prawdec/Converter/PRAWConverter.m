@@ -10,6 +10,9 @@
 #import <CoreMedia/CoreMedia.h>
 #include <tiffio.h>
 
+#include <stdint.h>
+typedef float float32_t;
+
 @interface PRAWConverter ()
 @property (nonatomic, strong) dispatch_queue_t conversionQueue;
 @property (nonatomic, assign) BOOL isCancelled;
