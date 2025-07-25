@@ -13,7 +13,7 @@ Transcodes ProRes RAW to CinemaDNG only for Sony A7S3
 
 1. **Clone the repository**  
    ```sh
-   git clone <your-repo-url>
+   git clone https://github.com/Alexlugovtsov/prawdec.git
    cd prawdec
    ```
 
@@ -58,12 +58,10 @@ Transcodes ProRes RAW to CinemaDNG only for Sony A7S3
 ## Todo
 - [ ] Save timecodes to CinemaDNG
 - [ ] Extract audio
-- [ ] Port to Windows
-- [ ] If the ProRes RAW file contains Color Matrices for multiple scenes, use them to calculate more accurate color conversions
-- [ ] Use more accurate conversion algorithms
-- [ ] Support X-Trans CFA
 
-## Completed
-- [x] Support for Bayer CFA
-- [x] Use the matrix in metadata to create color conversions for DNG instead of per device maintenance like RAW Converter. This way it can be adapted to any niche or new device. 
-- [x] Calibrate the white balance of the converted DNG file. (Assimilate does not calibrate this resulting in single matrix files always being converted to D65)
+##
+- Use of Hardcoded Matrix from Raw Convertor, because it is much more accurate for now. This is the reason of Sony A7S3 only Support
+```
+ColorMatrix1: 0.7785000205 -0.3873000145 0.07519999892 -0.3670000136 1.073799968 0.33950001 -0.02089999989 0.08810000122 0.7519999743
+ColorMatrix2: 0.6912000179 -0.2126999944 -0.04690000042 -0.4469999969 1.217499971 0.2587000132 -0.03979999945 0.1477999985 0.6492000222
+```

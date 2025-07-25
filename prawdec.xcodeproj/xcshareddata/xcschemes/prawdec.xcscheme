@@ -16,7 +16,7 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "BB6F03712CF49C9700C8A48B"
-               BuildableName = "prawdec.app"
+               BuildableName = "ProResRAW-DNG for Sony A7S3.app"
                BlueprintName = "prawdec"
                ReferencedContainer = "container:prawdec.xcodeproj">
             </BuildableReference>
@@ -45,7 +45,7 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "BB6F03712CF49C9700C8A48B"
-            BuildableName = "prawdec.app"
+            BuildableName = "ProResRAW-DNG for Sony A7S3.app"
             BlueprintName = "prawdec"
             ReferencedContainer = "container:prawdec.xcodeproj">
          </BuildableReference>
@@ -62,7 +62,7 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "BB6F03712CF49C9700C8A48B"
-            BuildableName = "prawdec.app"
+            BuildableName = "ProResRAW-DNG for Sony A7S3.app"
             BlueprintName = "prawdec"
             ReferencedContainer = "container:prawdec.xcodeproj">
          </BuildableReference>
