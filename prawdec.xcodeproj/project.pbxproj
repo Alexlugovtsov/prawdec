@@ -7,9 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		2C0E7EF22E30161E001C41D2 /* AVFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BB6F03992CF4A4B800C8A48B /* AVFoundation.framework */; };
-		2C0E7EF52E30161F001C41D2 /* CoreMedia.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BB6F039D2CF4A4C700C8A48B /* CoreMedia.framework */; };
-		2C0E7EF72E301621001C41D2 /* CoreVideo.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BB6F039B2CF4A4C100C8A48B /* CoreVideo.framework */; };
+		2C0E7F002E303838001C41D2 /* AVFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BB6F03992CF4A4B800C8A48B /* AVFoundation.framework */; };
+		2C0E7F032E303839001C41D2 /* CoreMedia.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BB6F039D2CF4A4C700C8A48B /* CoreMedia.framework */; };
+		2C0E7F052E30383A001C41D2 /* CoreVideo.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BB6F039B2CF4A4C100C8A48B /* CoreVideo.framework */; };
 		BB6F03A02CF4A4E700C8A48B /* libtiff.a in Frameworks */ = {isa = PBXBuildFile; fileRef = BB6F039F2CF4A4E700C8A48B /* libtiff.a */; };
 		BBF2217E2DBB4FC10070F0A0 /* README.md in Resources */ = {isa = PBXBuildFile; fileRef = BBF2217D2DBB4FC10070F0A0 /* README.md */; };
 /* End PBXBuildFile section */
@@ -39,10 +39,10 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				2C0E7EF52E30161F001C41D2 /* CoreMedia.framework in Frameworks */,
-				2C0E7EF22E30161E001C41D2 /* AVFoundation.framework in Frameworks */,
+				2C0E7F032E303839001C41D2 /* CoreMedia.framework in Frameworks */,
+				2C0E7F002E303838001C41D2 /* AVFoundation.framework in Frameworks */,
 				BB6F03A02CF4A4E700C8A48B /* libtiff.a in Frameworks */,
-				2C0E7EF72E301621001C41D2 /* CoreVideo.framework in Frameworks */,
+				2C0E7F052E30383A001C41D2 /* CoreVideo.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -166,6 +166,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = arm64;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
@@ -232,6 +233,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = arm64;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
@@ -281,6 +283,7 @@
 				MACOSX_DEPLOYMENT_TARGET = 15.1;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = macosx;
 				SWIFT_COMPILATION_MODE = wholemodule;
 			};
@@ -289,23 +292,27 @@
 		BB6F03822CF49C9800C8A48B /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ARCHS = arm64;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = prawdec/prawdec.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
 				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "-";
-				CODE_SIGN_STYLE = Automatic;
+				CODE_SIGN_STYLE = Manual;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"prawdec/Preview Content\"";
 				DEVELOPMENT_TEAM = "";
+				"DEVELOPMENT_TEAM[sdk=macosx*]" = "";
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				ENABLE_USER_SELECTED_FILES = "";
 				GENERATE_INFOPLIST_FILE = YES;
 				HEADER_SEARCH_PATHS = /opt/homebrew/include;
 				INFOPLIST_KEY_CFBundleDisplayName = "ProResRAW-DNG";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.graphics-design";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -319,6 +326,8 @@
 				MARKETPLACES = "";
 				PRODUCT_BUNDLE_IDENTIFIER = moe.henri.prawdec;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
+				"PROVISIONING_PROFILE_SPECIFIER[sdk=macosx*]" = "";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_OBJC_BRIDGING_HEADER = prawdec/Converter/objcbridge.h;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
@@ -329,23 +338,27 @@
 		BB6F03832CF49C9800C8A48B /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ARCHS = arm64;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = prawdec/prawdec.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
 				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "-";
-				CODE_SIGN_STYLE = Automatic;
+				CODE_SIGN_STYLE = Manual;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"prawdec/Preview Content\"";
 				DEVELOPMENT_TEAM = "";
+				"DEVELOPMENT_TEAM[sdk=macosx*]" = "";
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				ENABLE_USER_SELECTED_FILES = "";
 				GENERATE_INFOPLIST_FILE = YES;
 				HEADER_SEARCH_PATHS = /opt/homebrew/include;
 				INFOPLIST_KEY_CFBundleDisplayName = "ProResRAW-DNG";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.graphics-design";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -360,6 +373,8 @@
 				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = moe.henri.prawdec;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
+				"PROVISIONING_PROFILE_SPECIFIER[sdk=macosx*]" = "";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_OBJC_BRIDGING_HEADER = prawdec/Converter/objcbridge.h;
 				SWIFT_VERSION = 5.0;
