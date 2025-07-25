@@ -8,30 +8,11 @@
 
 /* Begin PBXBuildFile section */
 		2C9AEDAA2E339F4F00E82C76 /* AVFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BB6F03992CF4A4B800C8A48B /* AVFoundation.framework */; };
-		2C9AEDAB2E339F4F00E82C76 /* AVFoundation.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = BB6F03992CF4A4B800C8A48B /* AVFoundation.framework */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		2C9AEDAD2E339F5000E82C76 /* CoreMedia.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BB6F039D2CF4A4C700C8A48B /* CoreMedia.framework */; };
-		2C9AEDAE2E339F5000E82C76 /* CoreMedia.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = BB6F039D2CF4A4C700C8A48B /* CoreMedia.framework */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		2C9AEDAF2E339F5100E82C76 /* CoreVideo.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BB6F039B2CF4A4C100C8A48B /* CoreVideo.framework */; };
-		2C9AEDB02E339F5100E82C76 /* CoreVideo.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = BB6F039B2CF4A4C100C8A48B /* CoreVideo.framework */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		2CA0FED02E33B58D00206CCA /* libtiff.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 2CA0FECF2E33B58000206CCA /* libtiff.a */; };
 		BBF2217E2DBB4FC10070F0A0 /* README.md in Resources */ = {isa = PBXBuildFile; fileRef = BBF2217D2DBB4FC10070F0A0 /* README.md */; };
 /* End PBXBuildFile section */
-
-/* Begin PBXCopyFilesBuildPhase section */
-		2C9AEDAC2E339F4F00E82C76 /* Embed Frameworks */ = {
-			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = "";
-			dstSubfolderSpec = 10;
-			files = (
-				2C9AEDAE2E339F5000E82C76 /* CoreMedia.framework in Embed Frameworks */,
-				2C9AEDAB2E339F4F00E82C76 /* AVFoundation.framework in Embed Frameworks */,
-				2C9AEDB02E339F5100E82C76 /* CoreVideo.framework in Embed Frameworks */,
-			);
-			name = "Embed Frameworks";
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		2CA0FECF2E33B58000206CCA /* libtiff.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libtiff.a; path = ../../../../opt/homebrew/Cellar/libtiff/4.7.0/lib/libtiff.a; sourceTree = "<group>"; };
@@ -107,7 +88,6 @@
 				BB6F036E2CF49C9700C8A48B /* Sources */,
 				BB6F036F2CF49C9700C8A48B /* Frameworks */,
 				BB6F03702CF49C9700C8A48B /* Resources */,
-				2C9AEDAC2E339F4F00E82C76 /* Embed Frameworks */,
 			);
 			buildRules = (
 			);
