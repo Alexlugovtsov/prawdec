@@ -35,7 +35,7 @@
 
 /* Begin PBXFileReference section */
 		2CA0FECF2E33B58000206CCA /* libtiff.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libtiff.a; path = ../../../../opt/homebrew/Cellar/libtiff/4.7.0/lib/libtiff.a; sourceTree = "<group>"; };
-		BB6F03722CF49C9700C8A48B /* prawdec.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = prawdec.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		BB6F03722CF49C9700C8A48B /* ProResRAW-DNG for Sony A7S3.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "ProResRAW-DNG for Sony A7S3.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		BB6F03992CF4A4B800C8A48B /* AVFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AVFoundation.framework; path = System/Library/Frameworks/AVFoundation.framework; sourceTree = SDKROOT; };
 		BB6F039B2CF4A4C100C8A48B /* CoreVideo.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreVideo.framework; path = System/Library/Frameworks/CoreVideo.framework; sourceTree = SDKROOT; };
 		BB6F039D2CF4A4C700C8A48B /* CoreMedia.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreMedia.framework; path = System/Library/Frameworks/CoreMedia.framework; sourceTree = SDKROOT; };
@@ -81,7 +81,7 @@
 		BB6F03732CF49C9700C8A48B /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				BB6F03722CF49C9700C8A48B /* prawdec.app */,
+				BB6F03722CF49C9700C8A48B /* ProResRAW-DNG for Sony A7S3.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -120,7 +120,7 @@
 			packageProductDependencies = (
 			);
 			productName = prawdec;
-			productReference = BB6F03722CF49C9700C8A48B /* prawdec.app */;
+			productReference = BB6F03722CF49C9700C8A48B /* ProResRAW-DNG for Sony A7S3.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -360,7 +360,7 @@
 				MARKETING_VERSION = 1.0;
 				MARKETPLACES = "";
 				PRODUCT_BUNDLE_IDENTIFIER = moe.henri.prawdec;
-				PRODUCT_NAME = "$(TARGET_NAME)";
+				PRODUCT_NAME = "ProResRAW-DNG for Sony A7S3";
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_OBJC_BRIDGING_HEADER = prawdec/Converter/objcbridge.h;
@@ -411,7 +411,7 @@
 				MARKETPLACES = "";
 				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = moe.henri.prawdec;
-				PRODUCT_NAME = "$(TARGET_NAME)";
+				PRODUCT_NAME = "ProResRAW-DNG for Sony A7S3";
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_OBJC_BRIDGING_HEADER = prawdec/Converter/objcbridge.h;
