@@ -191,9 +191,15 @@ void calculateCATMatrixFromCCT(float32_t sourceCCT, float32_t destCCT, float32_t
                 return;
             }
 
+            NSArray *formats = [videoTrack formatDescriptions];
+            for (CMFormatDescriptionRef desc in formats) {
+                FourCharCode code = CMFormatDescriptionGetMediaSubType(desc);
+                NSLog(@"Supported pixel format: %4.4s", (char *)&code);
+            }
+
             NSDictionary *proResDict = @{
                 AVVideoAllowWideColorKey: @(YES),
-                (NSString *)kCVPixelBufferPixelFormatTypeKey: @(kCVPixelFormatType_16VersatileBayer),
+                (NSString *)kCVPixelBufferPixelFormatTypeKey: @(kCVPixelFormatType_16VersatileBayer), //kCVPixelFormatType_16VersatileBayer //kCVPixelFormatType_32BGRA
                 AVVideoDecompressionPropertiesKey: @{@"EnableLoggingInProResRAW": @(YES)}
             };
 
