@@ -146,64 +146,90 @@ void calculateCATMatrixFromCCT(float32_t sourceCCT, float32_t destCCT, float32_t
 
 - (void)convertProResRawToDNGWithInputPath:(NSString *)inputPath
                            outputDirectory:(NSString *)outputDirectory
-                                //frameCount:(NSInteger)frameCount
                              progressBlock:(void (^)(double))progressHandler
                            completionBlock:(void (^)(BOOL, NSError * _Nullable))completionHandler
 {
-    // Reset cancellation flag
     self.isCancelled = NO;
-    
-    // Perform conversion asynchronously on the serial queue
+    NSLog(@"Starting conversion: inputPath=%@, outputDirectory=%@", inputPath, outputDirectory);
+
     dispatch_async(self.conversionQueue, ^{
         @autoreleasepool {
             NSError *error = nil;
+            NSLog(@"Loading AVURLAsset...");
             AVURLAsset *asset = [AVURLAsset URLAssetWithURL:[NSURL fileURLWithPath:inputPath] options:@{AVURLAssetPreferPreciseDurationAndTimingKey: @(YES)}];
-            
+
+            NSLog(@"Creating AVAssetReader...");
             AVAssetReader *assetReader = [AVAssetReader assetReaderWithAsset:asset error:&error];
             if (error) {
+                NSLog(@"Error creating AVAssetReader: %@", error);
                 [self handleCompletionWithSuccess:NO error:error completion:completionHandler];
                 return;
             }
-            
+
             NSMutableDictionary *assetMetadataDict = [NSMutableDictionary new];
-            
+            dispatch_group_t metadataGroup = dispatch_group_create();
+            dispatch_queue_t metadataQueue = dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0);
+
+            NSLog(@"Loading metadata formats...");
             for (NSString *format in asset.availableMetadataFormats) {
-                NSArray<AVMetadataItem *> *items = [asset metadataForFormat:format];
-                
-                for (AVMetadataItem *item in items) {
-                    if (item.key && item.value) {
-                        assetMetadataDict[item.key] = item.value ?: [NSNull null];
-                    }
-                }
+                dispatch_group_enter(metadataGroup);
+                dispatch_async(metadataQueue, ^{
+                    [asset loadMetadataForFormat:format completionHandler:^(NSArray<AVMetadataItem *> *items, NSError * _Nullable metaError) {
+                        if (items) {
+                            for (AVMetadataItem *item in items) {
+                                if (item.key && item.value) {
+                                    assetMetadataDict[item.key] = item.value ?: [NSNull null];
+                                }
+                            }
+                        }
+                        dispatch_group_leave(metadataGroup);
+                    }];
+                });
             }
-            
+            dispatch_group_wait(metadataGroup, DISPATCH_TIME_FOREVER);
+
+            NSLog(@"Metadata loaded: %@", assetMetadataDict);
+
             NSString *make = assetMetadataDict[@"com.apple.proapps.manufacturer"];
             NSString *model = assetMetadataDict[@"com.apple.proapps.modelname"];
-            
-            AVAssetTrack *videoTrack = [[asset tracksWithMediaType:AVMediaTypeVideo] firstObject];
+            NSLog(@"Camera make: %@, model: %@", make, model);
+
+            __block AVAssetTrack *videoTrack = nil;
+            dispatch_semaphore_t trackSem = dispatch_semaphore_create(0);
+            NSLog(@"Loading video tracks...");
+            [asset loadTracksWithMediaType:AVMediaTypeVideo completionHandler:^(NSArray<AVAssetTrack *> *tracks, NSError * _Nullable trackError) {
+                videoTrack = tracks.firstObject;
+                dispatch_semaphore_signal(trackSem);
+            }];
+            dispatch_semaphore_wait(trackSem, DISPATCH_TIME_FOREVER);
             if (!videoTrack) {
+                NSLog(@"No video track found.");
                 NSError *trackError = [NSError errorWithDomain:@"ConverterErrorDomain" code:100 userInfo:@{NSLocalizedDescriptionKey: @"No video track found in the asset."}];
                 [self handleCompletionWithSuccess:NO error:trackError completion:completionHandler];
                 return;
             }
-            
+
             NSDictionary *proResDict = @{
                 AVVideoAllowWideColorKey: @(YES),
                 (NSString *)kCVPixelBufferPixelFormatTypeKey: @(kCVPixelFormatType_16VersatileBayer),
                 AVVideoDecompressionPropertiesKey: @{@"EnableLoggingInProResRAW": @(YES)}
             };
-            
+
+            NSLog(@"Creating AVAssetReaderTrackOutput...");
             AVAssetReaderTrackOutput *videoOutput = [AVAssetReaderTrackOutput assetReaderTrackOutputWithTrack:videoTrack outputSettings:proResDict];
             videoOutput.alwaysCopiesSampleData = NO;
-            
+
             if (![assetReader canAddOutput:videoOutput]) {
+                NSLog(@"Cannot add video output to asset reader.");
                 NSError *outputError = [NSError errorWithDomain:@"ConverterErrorDomain" code:101 userInfo:@{NSLocalizedDescriptionKey: @"Cannot add video output to asset reader."}];
                 [self handleCompletionWithSuccess:NO error:outputError completion:completionHandler];
                 return;
             }
-            
+
             [assetReader addOutput:videoOutput];
+            NSLog(@"Starting asset reading...");
             if (![assetReader startReading]) {
+                NSLog(@"Failed to start reading the asset.");
                 NSError *startError = assetReader.error ?: [NSError errorWithDomain:@"ConverterErrorDomain" code:102 userInfo:@{NSLocalizedDescriptionKey: @"Failed to start reading the asset."}];
                 [self handleCompletionWithSuccess:NO error:startError completion:completionHandler];
                 return;
@@ -216,36 +242,34 @@ void calculateCATMatrixFromCCT(float32_t sourceCCT, float32_t destCCT, float32_t
             if (totalFrames <= 0) {
                 totalFrames = 1; // Prevent division by zero
             }
-            
             NSInteger currentFrame = 0;
-            
+            NSLog(@"Estimated total frames: %ld", (long)totalFrames);
+
             while (assetReader.status == AVAssetReaderStatusReading) {
                 if (self.isCancelled) {
+                    NSLog(@"Conversion cancelled by user.");
                     [assetReader cancelReading];
                     NSError *cancelError = [NSError errorWithDomain:@"ConverterErrorDomain" code:107 userInfo:@{NSLocalizedDescriptionKey: @"Conversion was cancelled by the user."}];
                     [self handleCompletionWithSuccess:NO error:cancelError completion:completionHandler];
                     return;
                 }
-                
+
                 CMSampleBufferRef sampleBuffer = [videoOutput copyNextSampleBuffer];
                 if (sampleBuffer) {
+                    NSLog(@"Processing frame %ld...", (long)currentFrame);
+
                     CVPixelBufferRef imageBuffer = CMSampleBufferGetImageBuffer(sampleBuffer);
                     CVPixelBufferLockBaseAddress(imageBuffer, kCVPixelBufferLock_ReadOnly);
-                    
+
                     void *baseAddress = CVPixelBufferGetBaseAddress(imageBuffer);
                     size_t bytesPerRow = CVPixelBufferGetBytesPerRow(imageBuffer);
                     size_t width = CVPixelBufferGetWidth(imageBuffer);
                     size_t height = CVPixelBufferGetHeight(imageBuffer);
                     size_t dataLength = bytesPerRow * height;
                     NSData *rawData = [NSData dataWithBytes:baseAddress length:dataLength];
-                    
-                    // Extract metadata
+
                     NSDictionary *attributes = (__bridge_transfer NSDictionary *)CVPixelBufferCopyCreationAttributes(imageBuffer);
-                    // NSNumber *extendedPixelsBottom = attributes[@"ExtendedPixelsBottom"];
-                    // NSNumber *extendedPixelsLeft = attributes[@"ExtendedPixelsLeft"];
-                    // NSNumber *extendedPixelsRight = attributes[@"ExtendedPixelsRight"];
-                    // NSNumber *extendedPixelsTop = attributes[@"ExtendedPixelsTop"];
-                    
+
                     NSDictionary *pixelFormatDescription = attributes[@"PixelFormatDescription"];
                     NSString *componentRange = nil;
                     NSNumber *pixelFormat = nil;
@@ -268,7 +292,7 @@ void calculateCATMatrixFromCCT(float32_t sourceCCT, float32_t destCCT, float32_t
                         containsAlpha = pixelFormatDescription[@"ContainsAlpha"];
                         containsSenselArray = pixelFormatDescription[@"ContainsSenselArray"];
                     }
-                    
+
                     NSDictionary *attachments = (__bridge_transfer NSDictionary *)CVBufferCopyAttachments(imageBuffer, kCVAttachmentMode_ShouldPropagate);
                     NSNumber *whiteBalanceCCT = nil;
                     NSData *metadataExtension = nil;
@@ -289,12 +313,12 @@ void calculateCATMatrixFromCCT(float32_t sourceCCT, float32_t destCCT, float32_t
                         metadataExtension = attachments[@"ProResRAW_MetadataExtension"];
                         recommendedCrop = attachments[@"ProResRAW_RecommendedCrop"];
                         
-                        NSDictionary *qtMovieTime = attachments[@"QTMovieTime"];
-                        NSNumber *qtTimeScale = qtMovieTime[@"TimeScale"];
-                        NSNumber *qtTimeValue = qtMovieTime[@"TimeValue"];
-                        
-                        NSNumber *largestDCQSS = attachments[@"ProResRAW_LargestDCQSS"];
-                        NSNumber *fieldCount = attachments[@"CVFieldCount"];
+//                        NSDictionary *qtMovieTime = attachments[@"QTMovieTime"];
+//                        NSNumber *qtTimeScale = qtMovieTime[@"TimeScale"];
+//                        NSNumber *qtTimeValue = qtMovieTime[@"TimeValue"];
+//                        
+//                        NSNumber *largestDCQSS = attachments[@"ProResRAW_LargestDCQSS"];
+//                        NSNumber *fieldCount = attachments[@"CVFieldCount"];
                         whiteBalanceBlueFactor = attachments[@"ProResRAW_WhiteBalanceBlueFactor"];
                         blackLevel = attachments[@"ProResRAW_BlackLevel"];
                         colorMatrix = attachments[@"ProResRAW_ColorMatrix"];
@@ -309,11 +333,10 @@ void calculateCATMatrixFromCCT(float32_t sourceCCT, float32_t destCCT, float32_t
                         
                         transferFunction = attachments[@"CVImageBufferTransferFunction"];
                     }
-                    
-                    // Construct output DNG path
+
                     NSString *outputPath = [self dngPathForInputPath:inputPath frameNumber:currentFrame outputDirectory:outputDirectory];
-                    
-                    // Create TIFF file
+                    NSLog(@"Creating TIFF file at path: %@", outputPath);
+
                     TIFF *tif = TIFFOpen([outputPath UTF8String], "w");
                     if (!tif) {
                         NSLog(@"Failed to open TIFF file at path: %@", outputPath);
@@ -323,8 +346,9 @@ void calculateCATMatrixFromCCT(float32_t sourceCCT, float32_t destCCT, float32_t
                         [self handleCompletionWithSuccess:NO error:tiffError completion:completionHandler];
                         return;
                     }
-                    
+
                     // Set TIFF fields
+                    NSLog(@"Setting TIFF fields...");
                     TIFFSetField(tif, TIFFTAG_SUBFILETYPE, 0);
                     TIFFSetField(tif, TIFFTAG_IMAGEWIDTH, width);
                     TIFFSetField(tif, TIFFTAG_IMAGELENGTH, height);
@@ -376,154 +400,182 @@ void calculateCATMatrixFromCCT(float32_t sourceCCT, float32_t destCCT, float32_t
                     // Set CFA Pattern
                     uint8_t cfaPattern[4];
                     int bayerPatternValue = [bayerPattern intValue];
-                    
                     switch (bayerPatternValue) {
-                        case 1: // GRBG
-                            cfaPattern[0] = 1; // Green
-                            cfaPattern[1] = 0; // Red
-                            cfaPattern[2] = 2; // Blue
-                            cfaPattern[3] = 1; // Green
-                            break;
-                        case 2: // GBRG
-                            cfaPattern[0] = 1; // Green
-                            cfaPattern[1] = 2; // Blue
-                            cfaPattern[2] = 0; // Red
-                            cfaPattern[3] = 1; // Green
-                            break;
-                        case 3: // BGGR
-                            cfaPattern[0] = 2; // Blue
-                            cfaPattern[1] = 1; // Green
-                            cfaPattern[2] = 1; // Green
-                            cfaPattern[3] = 0; // Red
-                            break;
-                        default: // RGGB
-                            cfaPattern[0] = 0; // Red
-                            cfaPattern[1] = 1; // Green
-                            cfaPattern[2] = 1; // Green
-                            cfaPattern[3] = 2; // Blue
-                            break;
+                        case 1: cfaPattern[0] = 1; cfaPattern[1] = 0; cfaPattern[2] = 2; cfaPattern[3] = 1; break;
+                        case 2: cfaPattern[0] = 1; cfaPattern[1] = 2; cfaPattern[2] = 0; cfaPattern[3] = 1; break;
+                        case 3: cfaPattern[0] = 2; cfaPattern[1] = 1; cfaPattern[2] = 1; cfaPattern[3] = 0; break;
+                        default: cfaPattern[0] = 0; cfaPattern[1] = 1; cfaPattern[2] = 1; cfaPattern[3] = 2; break;
                     }
-                    
                     uint16_t cfaPatternDim[2] = {2, 2};
-                    // TIFFSetField(tif, TIFFTAG_CFAPLANECOLOR, 3, (uint8_t[]){0,1,2});
                     TIFFSetField(tif, TIFFTAG_CFAREPEATPATTERNDIM, cfaPatternDim);
                     TIFFSetField(tif, TIFFTAG_CFAPATTERN, 4, cfaPattern);
-                    
-                    // Set AsShotNeutral
+
                     float asShotNeutral[3] = {1.0, 1.0, 1.0};
                     if (whiteBalanceRedFactor && whiteBalanceBlueFactor) {
                         asShotNeutral[0] = 1.0 / [whiteBalanceRedFactor floatValue];
                         asShotNeutral[2] = 1.0 / [whiteBalanceBlueFactor floatValue];
                     }
                     TIFFSetField(tif, TIFFTAG_ASSHOTNEUTRAL, 3, asShotNeutral);
-                    
-                //    if (colorMatrix) {
-                //        NSLog(@"Original ColorMatrix: %f %f %f %f %f %f %f %f %f",
-                //              ((float32_t*)[colorMatrix bytes])[0],
-                //              ((float32_t*)[colorMatrix bytes])[1],
-                //              ((float32_t*)[colorMatrix bytes])[2],
-                //              ((float32_t*)[colorMatrix bytes])[3],
-                //              ((float32_t*)[colorMatrix bytes])[4],
-                //              ((float32_t*)[colorMatrix bytes])[5],
-                //              ((float32_t*)[colorMatrix bytes])[6],
-                //              ((float32_t*)[colorMatrix bytes])[7],
-                //              ((float32_t*)[colorMatrix bytes])[8]);
-                //        size_t colorMatrixLength = [colorMatrix length];
-                //        size_t colorMatrixCount = colorMatrixLength / sizeof(float32_t);
-                       
-                //        if (colorMatrixLength % sizeof(float32_t) != 0 || colorMatrixCount != 9) {
-                //            NSLog(@"Color matrix data length is not a multiple of sizeof(float)");
-                //            error = [NSError errorWithDomain:@"moe.henri.prawdec" code:2 userInfo:@{NSLocalizedDescriptionKey: @"Invalid color matrix data length"}];
-                //            TIFFSetField(tif, TIFFTAG_COLORMATRIX1, 9, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f);
-                //            TIFFSetField(tif, TIFFTAG_CALIBRATIONILLUMINANT1, 17);
-                //            TIFFSetField(tif, TIFFTAG_CALIBRATIONILLUMINANT2, 21);
-                //        } else {
-                //            // Create an array to hold the float values
-                //            float32_t *colorMatrixValues = (float32_t*)malloc(colorMatrixLength);
-                //            if (colorMatrixValues == NULL) {
-                //                NSLog(@"Failed to allocate memory for color matrix");
-                //                error = [NSError errorWithDomain:@"com.example.dngwriter" code:3 userInfo:@{NSLocalizedDescriptionKey: @"Memory allocation failure"}];
-                //            } else {
-                //                [colorMatrix getBytes:colorMatrixValues length:colorMatrixLength];
-                               
-                //                float32_t invColorMatrix[9];
-                //                float32_t colorMatrix1[9];
-                               
-                //                if (!inverseMatrix3x3(colorMatrixValues, invColorMatrix)) {
-                //                    NSLog(@"Color matrix is not invertible");
-                //                    error = [NSError errorWithDomain:@"moe.henri.prawdec" code:5 userInfo:@{NSLocalizedDescriptionKey: @"Color matrix inversion failed"}];
-                //                    TIFFSetField(tif, TIFFTAG_COLORMATRIX1, 9, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f);
-                //                    TIFFSetField(tif, TIFFTAG_CALIBRATIONILLUMINANT1, 17);
-                //                    TIFFSetField(tif, TIFFTAG_CALIBRATIONILLUMINANT2, 21);
-                //                } else {
-                //                    NSLog(@"Color matrix is invertible");
-                //                    for (int col = 0; col < 3; ++col) {
-                //                        colorMatrix1[col] = invColorMatrix[col] / [whiteBalanceRedFactor doubleValue];
-                //                        colorMatrix1[3+col] = invColorMatrix[3+col];
-                //                        colorMatrix1[6+col] = invColorMatrix[6+col] / [whiteBalanceBlueFactor doubleValue];
-                //                    }
-                //                }
-                //                  NSLog(@"ColorMatrix1 before WB: %f %f %f %f %f %f %f %f %f",
-                //                          colorMatrix1[0], colorMatrix1[1], colorMatrix1[2],
-                //                          colorMatrix1[3], colorMatrix1[4], colorMatrix1[5],
-                //                          colorMatrix1[6], colorMatrix1[7], colorMatrix1[8]);
-                //                if ([whiteBalanceCCT intValue] != 0) {
-                //                    NSLog(@"WB iis set, applying Color Adaptation Matrix");
-                //                    NSLog(@"whiteBalanceCCT = %@", whiteBalanceCCT);
-                //                    float32_t catMatrix[9];
-                //                    calculateCATMatrixFromCCT([whiteBalanceCCT floatValue], 6504.0f, catMatrix);
-                //                    float32_t dngColorMatrix1[9];
-                //                    multiplyMatrix3x3(colorMatrix1, catMatrix, dngColorMatrix1);
-                                   
-                //                    TIFFSetField(tif, TIFFTAG_COLORMATRIX1, colorMatrixCount, dngColorMatrix1);
-                //                } else {
-                //                    NSLog(@"WB not set, using original color matrix");
-                //                    TIFFSetField(tif, TIFFTAG_COLORMATRIX1, colorMatrixCount, colorMatrix1);
-                //                }
-                //                TIFFSetField(tif, TIFFTAG_CALIBRATIONILLUMINANT1, 17);
-                //                TIFFSetField(tif, TIFFTAG_CALIBRATIONILLUMINANT2, 21);
-                               
-                //                free(colorMatrixValues);
-                //            }
-                //        }
-                //    } else {
-                //        NSLog(@"No color matrix provided, using default D65 matrix");
-                //        TIFFSetField(tif, TIFFTAG_COLORMATRIX1, 9, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f);
-                //        TIFFSetField(tif, TIFFTAG_CALIBRATIONILLUMINANT1, 17);
-                //        TIFFSetField(tif, TIFFTAG_CALIBRATIONILLUMINANT2, 21);
-                //    }
 
-// Experement
-                    // ColorMatrix1
-                     float32_t colorMatrix1[] = {
-                          0.7785f, -0.3873f, 0.0752f,
-                         -0.3670f,  1.0738f,  0.3395f,
-                         -0.0209f,  0.0881f,  0.7520f
-                     };
-                    TIFFSetField(tif, TIFFTAG_COLORMATRIX1, 9, colorMatrix1);
+                    // Sony A7S3 Start
+                    if ([model isEqualToString:@"ILCE-7SM3"]) {
+                        NSLog(@"Applying Sony A7S3 color matrices and calibration...");
+                        float32_t colorMatrix1[] = {
+                            0.7785f, -0.3873f, 0.0752f,
+                            -0.3670f,  1.0738f,  0.3395f,
+                            -0.0209f,  0.0881f,  0.7520f
+                        };
+                        TIFFSetField(tif, TIFFTAG_COLORMATRIX1, 9, colorMatrix1);
 
-                    // ColorMatrix2
-                    float32_t colorMatrix2[] = {
-                         0.6912f, -0.2127f, -0.0469f,
-                        -0.4470f,  1.2175f,  0.2587f,
-                        -0.0398f,  0.1478f,  0.6492f
-                    };
-                    TIFFSetField(tif, TIFFTAG_COLORMATRIX2, 9, colorMatrix2);
+                        float32_t colorMatrix2[] = {
+                            0.6912f, -0.2127f, -0.0469f,
+                            -0.4470f,  1.2175f,  0.2587f,
+                            -0.0398f,  0.1478f,  0.6492f
+                        };
+                        TIFFSetField(tif, TIFFTAG_COLORMATRIX2, 9, colorMatrix2);
 
-                   // Light
-                    TIFFSetField(tif, TIFFTAG_CALIBRATIONILLUMINANT1, 17); //Standard Light
-                    TIFFSetField(tif, TIFFTAG_CALIBRATIONILLUMINANT2, 21); // D65
+                        float32_t cameraCalibration1[] = {
+                            1.0546f, 0.0f, 0.0f,
+                            0.0f, 1.0f, 0.0f,
+                            0.0f, 0.0f, 0.9980999827f
+                        };
+                        TIFFSetField(tif, TIFFTAG_CAMERACALIBRATION1, 9, cameraCalibration1);
+                        TIFFSetField(tif, TIFFTAG_CAMERACALIBRATION2, 9, cameraCalibration1);
+                    }
+                    // Sony A7S3 End
+                    // Sony FX3 Start
+                    else if ([model isEqualToString:@"ILME-FX3"]) {
+                        NSLog(@"Applying Sony FX3 color matrices and calibration...");
+                        float32_t colorMatrix1[] = {
+                            0.7785f, -0.3873f, 0.0752f,
+                            -0.3670f,  1.0738f,  0.3395f,
+                            -0.0209f,  0.0881f,  0.7520f
+                        };
+                        TIFFSetField(tif, TIFFTAG_COLORMATRIX1, 9, colorMatrix1);
 
-                    // Camera Calibration
-                    float32_t camCalibration1[] = {
-                        1.0546f, 0.0f, 0.0f,
-                        0.0f, 1.0f, 0.0f,
-                        0.0f, 0.0f, 0.9980999827f
-                    };
-                    TIFFSetField(tif, TIFFTAG_CAMERACALIBRATION1, 9, camCalibration1);
-                    TIFFSetField(tif, TIFFTAG_CAMERACALIBRATION2, 9, camCalibration1); // Usually same
-// Experement
-                    // Set White Level and Black Level
+                        float32_t colorMatrix2[] = {
+                            0.6912f, -0.2127f, -0.0469f,
+                            -0.4470f,  1.2175f,  0.2587f,
+                            -0.0398f,  0.1478f,  0.6492f
+                        };
+                        TIFFSetField(tif, TIFFTAG_COLORMATRIX2, 9, colorMatrix2);
+
+                        float32_t cameraCalibration1[] = {
+                            1.0546f, 0.0f, 0.0f,
+                            0.0f, 1.0f, 0.0f,
+                            0.0f, 0.0f, 0.9980999827f
+                        };
+                        TIFFSetField(tif, TIFFTAG_CAMERACALIBRATION1, 9, cameraCalibration1);
+                        TIFFSetField(tif, TIFFTAG_CAMERACALIBRATION2, 9, cameraCalibration1);
+                    }
+                    // Sony FX3 End
+                    // Sony FX6 Start
+                    else if ([model isEqualToString:@"ILME-FX6V"]) {
+                        NSLog(@"Applying Sony FX6V color matrices and calibration...");
+                        float32_t colorMatrix1[] = {
+                            1.3481f, -0.3318f, -0.1504f,
+                           -0.3754f,  1.2441f,  0.1035f,
+                           -0.0556f,  0.1639f,  0.2404f
+                        };
+                        TIFFSetField(tif, TIFFTAG_COLORMATRIX1, 9, colorMatrix1);
+
+                        float32_t colorMatrix2[] = {
+                            0.6959f, -0.1518f, -0.0673f,
+                           -0.3536f,  1.0837f,  0.2317f,
+                           -0.1049f,  0.2441f,  0.5229f
+                        };
+                        TIFFSetField(tif, TIFFTAG_COLORMATRIX2, 9, colorMatrix2);
+
+                        float32_t cameraCalibration1[] = {
+                            1.0f, 0.0f, 0.0f,
+                            0.0f, 1.0f, 0.0f,
+                            0.0f, 0.0f, 1.0f
+                        };
+                        TIFFSetField(tif, TIFFTAG_CAMERACALIBRATION1, 9, cameraCalibration1);
+                        TIFFSetField(tif, TIFFTAG_CAMERACALIBRATION2, 9, cameraCalibration1);
+                    }
+                    // Sony FX6 End
+                    else {
+                        if (colorMatrix) {
+                            NSLog(@"Processing Matrix Based on WB Calculations...");
+                            NSLog(@"Original ColorMatrix: %f %f %f %f %f %f %f %f %f",
+                                ((float32_t*)[colorMatrix bytes])[0],
+                                ((float32_t*)[colorMatrix bytes])[1],
+                                ((float32_t*)[colorMatrix bytes])[2],
+                                ((float32_t*)[colorMatrix bytes])[3],
+                                ((float32_t*)[colorMatrix bytes])[4],
+                                ((float32_t*)[colorMatrix bytes])[5],
+                                ((float32_t*)[colorMatrix bytes])[6],
+                                ((float32_t*)[colorMatrix bytes])[7],
+                                ((float32_t*)[colorMatrix bytes])[8]);
+                            size_t colorMatrixLength = [colorMatrix length];
+                            size_t colorMatrixCount = colorMatrixLength / sizeof(float32_t);
+
+                            if (colorMatrixLength % sizeof(float32_t) != 0 || colorMatrixCount != 9) {
+                                NSLog(@"Color matrix data length is not a multiple of sizeof(float)");
+                                error = [NSError errorWithDomain:@"moe.henri.prawdec" code:2 userInfo:@{NSLocalizedDescriptionKey: @"Invalid color matrix data length"}];
+                                TIFFSetField(tif, TIFFTAG_COLORMATRIX1, 9, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+                                TIFFSetField(tif, TIFFTAG_CALIBRATIONILLUMINANT1, 17);
+                                TIFFSetField(tif, TIFFTAG_CALIBRATIONILLUMINANT2, 21);
+                            } else {
+                                float32_t *colorMatrixValues = (float32_t*)malloc(colorMatrixLength);
+                                if (colorMatrixValues == NULL) {
+                                    NSLog(@"Failed to allocate memory for color matrix");
+                                    error = [NSError errorWithDomain:@"com.example.dngwriter" code:3 userInfo:@{NSLocalizedDescriptionKey: @"Memory allocation failure"}];
+                                } else {
+                                    [colorMatrix getBytes:colorMatrixValues length:colorMatrixLength];
+
+                                    float32_t invColorMatrix[9];
+                                    float32_t colorMatrix1[9];
+
+                                    if (!inverseMatrix3x3(colorMatrixValues, invColorMatrix)) {
+                                        NSLog(@"Color matrix is not invertible");
+                                        error = [NSError errorWithDomain:@"moe.henri.prawdec" code:5 userInfo:@{NSLocalizedDescriptionKey: @"Color matrix inversion failed"}];
+                                        TIFFSetField(tif, TIFFTAG_COLORMATRIX1, 9, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+                                        TIFFSetField(tif, TIFFTAG_CALIBRATIONILLUMINANT1, 17);
+                                        TIFFSetField(tif, TIFFTAG_CALIBRATIONILLUMINANT2, 21);
+                                    } else {
+                                        NSLog(@"Color matrix is invertible");
+                                        for (int col = 0; col < 3; ++col) {
+                                            colorMatrix1[col] = invColorMatrix[col] / [whiteBalanceRedFactor doubleValue];
+                                            colorMatrix1[3+col] = invColorMatrix[3+col];
+                                            colorMatrix1[6+col] = invColorMatrix[6+col] / [whiteBalanceBlueFactor doubleValue];
+                                        }
+                                    }
+                                    NSLog(@"ColorMatrix1 before WB: %f %f %f %f %f %f %f %f %f",
+                                        colorMatrix1[0], colorMatrix1[1], colorMatrix1[2],
+                                        colorMatrix1[3], colorMatrix1[4], colorMatrix1[5],
+                                        colorMatrix1[6], colorMatrix1[7], colorMatrix1[8]);
+                                    if ([whiteBalanceCCT intValue] != 0) {
+                                        NSLog(@"WB is set, applying Color Adaptation Matrix");
+                                        NSLog(@"whiteBalanceCCT = %@", whiteBalanceCCT);
+                                        float32_t catMatrix[9];
+                                        calculateCATMatrixFromCCT([whiteBalanceCCT floatValue], 6504.0f, catMatrix);
+                                        float32_t dngColorMatrix1[9];
+                                        multiplyMatrix3x3(colorMatrix1, catMatrix, dngColorMatrix1);
+
+                                        TIFFSetField(tif, TIFFTAG_COLORMATRIX1, colorMatrixCount, dngColorMatrix1);
+                                    } else {
+                                        NSLog(@"WB not set, using original color matrix");
+                                        TIFFSetField(tif, TIFFTAG_COLORMATRIX1, colorMatrixCount, colorMatrix1);
+                                    }
+                                    TIFFSetField(tif, TIFFTAG_CALIBRATIONILLUMINANT1, 17);
+                                    TIFFSetField(tif, TIFFTAG_CALIBRATIONILLUMINANT2, 21);
+
+                                    free(colorMatrixValues);
+                                }
+                            }
+                        } else {
+                            NSLog(@"No color matrix provided, using default D65 matrix");
+                            TIFFSetField(tif, TIFFTAG_COLORMATRIX1, 9, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+                            TIFFSetField(tif, TIFFTAG_CALIBRATIONILLUMINANT1, 17);
+                            TIFFSetField(tif, TIFFTAG_CALIBRATIONILLUMINANT2, 21);
+                        }
+                    }
+
+                    TIFFSetField(tif, TIFFTAG_CALIBRATIONILLUMINANT1, 17);
+                    TIFFSetField(tif, TIFFTAG_CALIBRATIONILLUMINANT2, 21);
+
                     uint32_t _whiteLevel = [whiteLevel unsignedIntValue];
                     float _blackLevel = [blackLevel floatValue];
                     TIFFSetField(tif, TIFFTAG_WHITELEVEL, 1, &_whiteLevel);
@@ -544,7 +596,7 @@ void calculateCATMatrixFromCCT(float32_t sourceCCT, float32_t destCCT, float32_t
                             [self handleCompletionWithSuccess:NO error:cancelError completion:completionHandler];
                             return;
                         }
-                        
+
                         const uint8_t *rowData = pixels + (row * bytesPerRow);
                         if (TIFFWriteScanline(tif, (void *)rowData, row, 0) < 0) {
                             NSLog(@"Failed to write scanline %u", row);
@@ -567,38 +619,34 @@ void calculateCATMatrixFromCCT(float32_t sourceCCT, float32_t destCCT, float32_t
                         [self handleCompletionWithSuccess:NO error:dirError completion:completionHandler];
                         return;
                     }
-                    
+
                     TIFFClose(tif);
                     CVPixelBufferUnlockBaseAddress(imageBuffer, 0);
                     CFRelease(sampleBuffer);
-                    
+
                     currentFrame++;
-                    
-                    // Update progress
                     double progress = (double)currentFrame / (double)totalFrames;
                     if (progress > 1.0) progress = 1.0;
                     if (progressHandler) {
                         dispatch_async(dispatch_get_main_queue(), ^{
+                            NSLog(@"Progress updated: %.2f%%", progress * 100);
                             progressHandler(progress);
                         });
                     }
-                    
-                    // Check if reached frameCount
-//                    if (frameCount > 0 && currentFrame >= frameCount) {
-//                        break;
-//                    }
                 } else {
-                    // No more sample buffers
+                    NSLog(@"No more sample buffers.");
                     break;
                 }
             }
-            
-            // Check the final status of assetReader
+
+            NSLog(@"Conversion finished. Checking assetReader status...");
             if (assetReader.status == AVAssetReaderStatusCompleted) {
+                NSLog(@"Conversion completed successfully.");
                 [self handleCompletionWithSuccess:YES error:nil completion:completionHandler];
             } else if (self.isCancelled) {
-                // Already handled above
+                NSLog(@"Conversion was cancelled.");
             } else {
+                NSLog(@"Asset reader did not complete successfully.");
                 NSError *finalError = assetReader.error ?: [NSError errorWithDomain:@"ConverterErrorDomain" code:106 userInfo:@{NSLocalizedDescriptionKey: @"Asset reader did not complete successfully."}];
                 [self handleCompletionWithSuccess:NO error:finalError completion:completionHandler];
             }
