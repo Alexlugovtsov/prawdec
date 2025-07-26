@@ -191,12 +191,6 @@ void calculateCATMatrixFromCCT(float32_t sourceCCT, float32_t destCCT, float32_t
                 return;
             }
 
-            NSArray *formats = [videoTrack formatDescriptions];
-            for (CMFormatDescriptionRef desc in formats) {
-                FourCharCode code = CMFormatDescriptionGetMediaSubType(desc);
-                NSLog(@"Supported pixel format: %4.4s", (char *)&code);
-            }
-
             NSDictionary *proResDict = @{
                 AVVideoAllowWideColorKey: @(YES),
                 // Remove specific pixel format to let AVFoundation choose automatically
