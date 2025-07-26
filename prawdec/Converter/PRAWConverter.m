@@ -628,7 +628,7 @@ void calculateCATMatrixFromCCT(float32_t sourceCCT, float32_t destCCT, float32_t
             } else if (self.isCancelled) {
                 NSLog(@"Conversion was cancelled.");
             } else {
-                NSLog(@"Asset reader did not complete successfully.");
+                NSLog(@"AssetReader error: %@", assetReader.error);
                 NSError *finalError = assetReader.error ?: [NSError errorWithDomain:@"ConverterErrorDomain" code:106 userInfo:@{NSLocalizedDescriptionKey: @"Asset reader did not complete successfully."}];
                 [self handleCompletionWithSuccess:NO error:finalError completion:completionHandler];
             }
