@@ -199,8 +199,12 @@ void calculateCATMatrixFromCCT(float32_t sourceCCT, float32_t destCCT, float32_t
 
             NSDictionary *proResDict = @{
                 AVVideoAllowWideColorKey: @(YES),
-                (NSString *)kCVPixelBufferPixelFormatTypeKey: @(kCVPixelFormatType_4444AYpCbCr16), //kCVPixelFormatType_16VersatileBayer //kCVPixelFormatType_32BGRA //kCVPixelFormatType_4444AYpCbCr16
-                AVVideoDecompressionPropertiesKey: @{@"EnableLoggingInProResRAW": @(YES)}
+                // Remove specific pixel format to let AVFoundation choose automatically
+                // (NSString *)kCVPixelBufferPixelFormatTypeKey: @(kCVPixelFormatType_16VersatileBayer),
+                AVVideoDecompressionPropertiesKey: @{
+                    @"EnableLoggingInProResRAW": @(YES),
+                    @"ProResRAWLoggingLevel": @(1)
+                }
             };
 
             NSLog(@"Creating AVAssetReaderTrackOutput...");
