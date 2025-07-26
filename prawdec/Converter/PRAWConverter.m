@@ -167,41 +167,23 @@ void calculateCATMatrixFromCCT(float32_t sourceCCT, float32_t destCCT, float32_t
             }
 
             NSMutableDictionary *assetMetadataDict = [NSMutableDictionary new];
-            dispatch_group_t metadataGroup = dispatch_group_create();
-            dispatch_queue_t metadataQueue = dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0);
-
             NSLog(@"Loading metadata formats...");
             for (NSString *format in asset.availableMetadataFormats) {
-                dispatch_group_enter(metadataGroup);
-                dispatch_async(metadataQueue, ^{
-                    [asset loadMetadataForFormat:format completionHandler:^(NSArray<AVMetadataItem *> *items, NSError * _Nullable metaError) {
-                        if (items) {
-                            for (AVMetadataItem *item in items) {
-                                if (item.key && item.value) {
-                                    assetMetadataDict[item.key] = item.value ?: [NSNull null];
-                                }
-                            }
-                        }
-                        dispatch_group_leave(metadataGroup);
-                    }];
-                });
+                NSArray<AVMetadataItem *> *items = [asset metadataForFormat:format];
+                
+                for (AVMetadataItem *item in items) {
+                    if (item.key && item.value) {
+                        assetMetadataDict[item.key] = item.value ?: [NSNull null];
+                    }
+                }
             }
-            dispatch_group_wait(metadataGroup, DISPATCH_TIME_FOREVER);
-
             NSLog(@"Metadata loaded: %@", assetMetadataDict);
 
             NSString *make = assetMetadataDict[@"com.apple.proapps.manufacturer"];
             NSString *model = assetMetadataDict[@"com.apple.proapps.modelname"];
             NSLog(@"Camera make: %@, model: %@", make, model);
-
-            __block AVAssetTrack *videoTrack = nil;
-            dispatch_semaphore_t trackSem = dispatch_semaphore_create(0);
-            NSLog(@"Loading video tracks...");
-            [asset loadTracksWithMediaType:AVMediaTypeVideo completionHandler:^(NSArray<AVAssetTrack *> *tracks, NSError * _Nullable trackError) {
-                videoTrack = tracks.firstObject;
-                dispatch_semaphore_signal(trackSem);
-            }];
-            dispatch_semaphore_wait(trackSem, DISPATCH_TIME_FOREVER);
+            
+            AVAssetTrack *videoTrack = [[asset tracksWithMediaType:AVMediaTypeVideo] firstObject];
             if (!videoTrack) {
                 NSLog(@"No video track found.");
                 NSError *trackError = [NSError errorWithDomain:@"ConverterErrorDomain" code:100 userInfo:@{NSLocalizedDescriptionKey: @"No video track found in the asset."}];
