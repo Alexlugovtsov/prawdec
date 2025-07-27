@@ -2,6 +2,10 @@
 
 Transcodes ProRes RAW to CinemaDNG
 
+based on https://github.com/ArakawaHenri/prawdec project, but uses ColorMatrix from Raw Convertor for some Cameras
+
+Tested and works ONLY on M3 and maybe higher Apple Silicon Processors, because of ```kCVPixelFormatType_16VersatileBayer``` does not work on M1. Cannot Decode from AVFoundationErrorDomain
+
 ## Requirements
 
 - macOS with Xcode (tested on recent versions)
@@ -62,7 +66,7 @@ Transcodes ProRes RAW to CinemaDNG
 - [ ] Extract audio
 
 ##
-- Use of Hardcoded Matrix from Raw Convertor, because it is much more accurate for now.
+- Use of Hardcoded Matrix from Raw Convertor, because it is much more accurate for now. data extracted via ```exiftool -b -ColorMatrix1 RawConvertorDNG```
 
 Sony A7S3/FX3
 ```
