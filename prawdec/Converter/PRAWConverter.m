@@ -379,6 +379,9 @@ void calculateCATMatrixFromCCT(float32_t sourceCCT, float32_t destCCT, float32_t
                         if ([make caseInsensitiveCompare:@"Sony"] == NSOrderedSame) {
                             make = @"SONY";
                         }
+                        else if ([make caseInsensitiveCompare:@"Fujifilm"] == NSOrderedSame) {
+                            make = @"FUJIFILM";
+                        }
                         NSString *uniqueModel = [NSString stringWithFormat:@"%@ %@", make, model];
                         TIFFSetField(tif, TIFFTAG_UNIQUECAMERAMODEL, [uniqueModel UTF8String]);
                     }
@@ -495,6 +498,32 @@ void calculateCATMatrixFromCCT(float32_t sourceCCT, float32_t destCCT, float32_t
                         TIFFSetField(tif, TIFFTAG_CAMERACALIBRATION2, 9, cameraCalibration1);
                     }
                     // Sony FX6 End
+                    // Sony GFX100S II Start
+                    else if ([model isEqualToString:@"GFX100S II"]) {
+                        NSLog(@"Applying Sony GFX100S II color matrices and calibration...");
+                        float32_t colorMatrix1[] = {
+                            1.5656f, -1.0088f, 0.1263f,
+                            -0.2871f,  1.0498f, 0.2752f,
+                             0.0065f,  0.0436f, 0.6714f
+                        };
+                        TIFFSetField(tif, TIFFTAG_COLORMATRIX1, 9, colorMatrix1);
+
+                        float32_t colorMatrix2[] = {
+                            1.2806f, -0.5779f, -0.1110f,
+                            -0.3546f,  1.1507f,  0.2318f,
+                            -0.0177f,  0.0996f,  0.5715f
+                        };
+                        TIFFSetField(tif, TIFFTAG_COLORMATRIX2, 9, colorMatrix2);
+
+                        float32_t cameraCalibration1[] = {
+                            1.0661f, 0.0f, 0.0f,
+                            0.0f, 1.0f, 0.0f,
+                            0.0f, 0.0f, 0.9181f
+                        };
+                        TIFFSetField(tif, TIFFTAG_CAMERACALIBRATION1, 9, cameraCalibration1);
+                        TIFFSetField(tif, TIFFTAG_CAMERACALIBRATION2, 9, cameraCalibration1);
+                    }
+                    // Sony GFX100S II End
                     else {
                         if (colorMatrix) {
                             NSLog(@"Processing Matrix Based on WB Calculations...");
