@@ -7,7 +7,6 @@
 
 #import "PRAWConverter.h"
 #import <AVFoundation/AVFoundation.h>
-#import <CoreMedia/CoreMedia.h>
 #include <tiffio.h>
 
 #include <stdint.h>
@@ -335,6 +334,12 @@ void calculateCATMatrixFromCCT(float32_t sourceCCT, float32_t destCCT, float32_t
                     }
 
                     NSString *outputPath = [self dngPathForInputPath:inputPath frameNumber:currentFrame outputDirectory:outputDirectory];
+                    if ([[NSFileManager defaultManager] fileExistsAtPath:outputPath]) {
+                        NSLog(@"Skipping already converted frame %ld", (long)currentFrame);
+                        CFRelease(sampleBuffer);
+                        currentFrame++;
+                        continue;
+                    }
                     NSLog(@"Creating TIFF file at path: %@", outputPath);
 
                     TIFF *tif = TIFFOpen([outputPath UTF8String], "w");
@@ -346,6 +351,14 @@ void calculateCATMatrixFromCCT(float32_t sourceCCT, float32_t destCCT, float32_t
                         [self handleCompletionWithSuccess:NO error:tiffError completion:completionHandler];
                         return;
                     }
+
+                    static const TIFFFieldInfo xtiffFieldInfo[] = {
+                        #define N(a) (sizeof(a) / sizeof (a[0]))
+                        #define TIFFTAG_TIMECODES     51043
+                        #define TIFFTAG_FRAMERATE     51044
+                        { TIFFTAG_FRAMERATE, -1, -1, TIFF_FLOAT, FIELD_CUSTOM, TRUE, TRUE, "FrameRate" }
+                    };
+                    TIFFMergeFieldInfo(tif, xtiffFieldInfo, N(xtiffFieldInfo));
 
                     // Set TIFF fields
                     NSLog(@"Setting TIFF fields...");
@@ -363,7 +376,8 @@ void calculateCATMatrixFromCCT(float32_t sourceCCT, float32_t destCCT, float32_t
                     TIFFSetField(tif, TIFFTAG_ORIENTATION, ORIENTATION_TOPLEFT);
                     TIFFSetField(tif, TIFFTAG_PLANARCONFIG, PLANARCONFIG_CONTIG);
                     TIFFSetField(tif, TIFFTAG_SOFTWARE, "Atomos Ninja V");
-                    // TIFFSetField(tif, TIFFTAG_DATETIME, [[NSDate date] descriptionWithLocale:nil]);
+                    float rate = videoTrack.nominalFrameRate;
+                    TIFFSetField(tif, TIFFTAG_FRAMERATE, 1, &rate);
 
                     if (make) {
                         if ([make caseInsensitiveCompare:@"Sony"] == NSOrderedSame) {
