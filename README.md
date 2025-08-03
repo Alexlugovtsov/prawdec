@@ -13,7 +13,8 @@ Tested and works ONLY on M3 and maybe higher Apple Silicon Processors, because o
 - git
 - Command line tools: `xcodebuild`
 - [Homebrew](https://brew.sh)
-- [libtiff](https://www.libtiff.org/) (install via Homebrew: `brew install libtiff`)
+- [libtiff](https://www.libtiff.org/)
+- [exiftool](https://exiftool.org)
 
 ## Build Instructions
 
@@ -27,6 +28,7 @@ Tested and works ONLY on M3 and maybe higher Apple Silicon Processors, because o
    Make sure `libtiff` is installed:
    ```sh
    brew install libtiff
+   brew install exiftool
    ```
 
 3. **Open the project in Xcode**  
