@@ -62,8 +62,8 @@ Tested and works ONLY on M3 and maybe higher Apple Silicon Processors, because o
 - The app will not run on other Macs unless properly signed and notarized.
 
 ## Todo
-- [ ] Save timecodes to CinemaDNG
-- [ ] Add Framerate of origrnal file
+- [x] Save timecodes to CinemaDNG
+- [x] Add Framerate of origrnal file
 - [ ] Extract audio
 
 ##

@@ -133,6 +133,9 @@ void calculateCATMatrixFromCCT(float32_t sourceCCT, float32_t destCCT, float32_t
     multiplyMatrix3x3(bradfordInv, temp, catMatrix);
 }
 
+static inline uint8_t bcd(uint8_t val) {
+    return ((val / 10) << 4) | (val % 10);
+}
 
 - (instancetype)init {
     self = [super init];
@@ -195,6 +198,30 @@ void calculateCATMatrixFromCCT(float32_t sourceCCT, float32_t destCCT, float32_t
 
             __block AVAssetTrack *videoTrack = nil;
             dispatch_semaphore_t trackSem = dispatch_semaphore_create(0);
+            
+            // Get timecode using ffmpeg
+            NSString *timecode = nil;
+            NSTask *task = [[NSTask alloc] init];
+            task.launchPath = @"/opt/homebrew/bin/ffmpeg";
+            task.arguments = @[@"-i", inputPath];
+
+            NSPipe *pipe = [NSPipe pipe];
+            task.standardError = pipe;
+            task.standardOutput = [NSPipe pipe];
+
+            [task launch];
+
+            NSData *data = [[pipe fileHandleForReading] readDataToEndOfFile];
+            NSString *output = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
+
+            NSRegularExpression *regex = [NSRegularExpression regularExpressionWithPattern:@"timecode.*?: (\\d\\d:\\d\\d:\\d\\d:\\d\\d)" options:0 error:nil];
+            NSTextCheckingResult *match = [regex firstMatchInString:output options:0 range:NSMakeRange(0, [output length])];
+
+            if (match) {
+                timecode = [output substringWithRange:[match rangeAtIndex:1]];
+                NSLog(@"Timecode from ffmpeg: %@", timecode);
+            }
+            //
             NSLog(@"Loading video tracks...");
             [asset loadTracksWithMediaType:AVMediaTypeVideo completionHandler:^(NSArray<AVAssetTrack *> *tracks, NSError * _Nullable trackError) {
                 videoTrack = tracks.firstObject;
@@ -356,6 +383,7 @@ void calculateCATMatrixFromCCT(float32_t sourceCCT, float32_t destCCT, float32_t
                         #define N(a) (sizeof(a) / sizeof (a[0]))
                         #define TIFFTAG_TIMECODES     51043
                         #define TIFFTAG_FRAMERATE     51044
+                        { TIFFTAG_TIMECODES, 8, 8, TIFF_BYTE, FIELD_CUSTOM, TRUE, TRUE, "TimeCodes" },
                         { TIFFTAG_FRAMERATE, -1, -1, TIFF_FLOAT, FIELD_CUSTOM, TRUE, TRUE, "FrameRate" }
                     };
                     TIFFMergeFieldInfo(tif, xtiffFieldInfo, N(xtiffFieldInfo));
@@ -378,6 +406,25 @@ void calculateCATMatrixFromCCT(float32_t sourceCCT, float32_t destCCT, float32_t
                     TIFFSetField(tif, TIFFTAG_SOFTWARE, "Atomos Ninja V");
                     float rate = videoTrack.nominalFrameRate;
                     TIFFSetField(tif, TIFFTAG_FRAMERATE, 1, &rate);
+if (currentFrame == 0 && timecode.length > 0) {
+    NSArray<NSString *> *parts = [timecode componentsSeparatedByString:@":"];
+    if (parts.count == 4) {
+        uint8_t hours   = (uint8_t)[parts[0] intValue];
+        uint8_t minutes = (uint8_t)[parts[1] intValue];
+        uint8_t seconds = (uint8_t)[parts[2] intValue];
+        uint8_t frames  = (uint8_t)[parts[3] intValue];
+
+        uint8_t timecodeValues[8] = {
+            bcd(frames),
+            bcd(seconds),
+            bcd(minutes),
+            bcd(hours),
+            0, 0, 0, 0
+        };
+        NSLog(@"Setting timecode: %02d:%02d:%02d:%02d for frame %d", hours, minutes, seconds, frames, currentFrame);
+        TIFFSetField(tif, TIFFTAG_TIMECODES, 8, timecodeValues);
+    }
+}
 
                     if (make) {
                         if ([make caseInsensitiveCompare:@"Sony"] == NSOrderedSame) {
