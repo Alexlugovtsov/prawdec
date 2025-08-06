@@ -98,7 +98,7 @@ void calculateCATMatrixFromCCT(float32_t sourceCCT, float32_t destCCT, float32_t
     getWhitePointFromCCT(sourceCCT, sourceWhitePoint);
     getWhitePointFromCCT(destCCT, destWhitePoint);
     
-    // Bradford 变换矩阵 (XYZ to LMS)
+    // Bradford transformation matrix (XYZ to LMS)
     float32_t bradford[9] = {
         0.8951f, 0.2664f, -0.1614f,
         -0.7502f, 1.7135f, 0.0367f,
@@ -406,25 +406,26 @@ static inline uint8_t bcd(uint8_t val) {
                     TIFFSetField(tif, TIFFTAG_SOFTWARE, "Atomos Ninja V");
                     float rate = videoTrack.nominalFrameRate;
                     TIFFSetField(tif, TIFFTAG_FRAMERATE, 1, &rate);
-if (currentFrame == 0 && timecode.length > 0) {
-    NSArray<NSString *> *parts = [timecode componentsSeparatedByString:@":"];
-    if (parts.count == 4) {
-        uint8_t hours   = (uint8_t)[parts[0] intValue];
-        uint8_t minutes = (uint8_t)[parts[1] intValue];
-        uint8_t seconds = (uint8_t)[parts[2] intValue];
-        uint8_t frames  = (uint8_t)[parts[3] intValue];
+                    // Set the timecode if available
+                    if (currentFrame == 0 && timecode.length > 0) {
+                        NSArray<NSString *> *parts = [timecode componentsSeparatedByString:@":"];
+                        if (parts.count == 4) {
+                            uint8_t hours   = (uint8_t)[parts[0] intValue];
+                            uint8_t minutes = (uint8_t)[parts[1] intValue];
+                            uint8_t seconds = (uint8_t)[parts[2] intValue];
+                            uint8_t frames  = (uint8_t)[parts[3] intValue];
 
-        uint8_t timecodeValues[8] = {
-            bcd(frames),
-            bcd(seconds),
-            bcd(minutes),
-            bcd(hours),
-            0, 0, 0, 0
-        };
-        NSLog(@"Setting timecode: %02d:%02d:%02d:%02d for frame %d", hours, minutes, seconds, frames, currentFrame);
-        TIFFSetField(tif, TIFFTAG_TIMECODES, 8, timecodeValues);
-    }
-}
+                            uint8_t timecodeValues[8] = {
+                                bcd(frames),
+                                bcd(seconds),
+                                bcd(minutes),
+                                bcd(hours),
+                                0, 0, 0, 0
+                            };
+                            NSLog(@"Setting timecode: %02d:%02d:%02d:%02d for frame %d", hours, minutes, seconds, frames, currentFrame);
+                            TIFFSetField(tif, TIFFTAG_TIMECODES, 8, timecodeValues);
+                        }
+                    }
 
                     if (make) {
                         if ([make caseInsensitiveCompare:@"Sony"] == NSOrderedSame) {
@@ -445,10 +446,10 @@ if (currentFrame == 0 && timecode.length > 0) {
                         }
                         NSString *uniqueModel = [NSString stringWithFormat:@"%@ %@", make, model];
                         TIFFSetField(tif, TIFFTAG_UNIQUECAMERAMODEL, [uniqueModel UTF8String]);
+                        // TIFFSetField(tif, TIFFTAG_UNIQUECAMERAMODEL, "Panasonic ICLE-7SM3"); //Fake model for testing !bad colors!
+                        // TIFFSetField(tif, TIFFTAG_UNIQUECAMERAMODEL, "Blackmagic URSA"); // The best exposure!
                     }
-                    // TIFFSetField(tif, TIFFTAG_UNIQUECAMERAMODEL, "Blackmagic URSA"); //Fake model for testing ISO
-                    // TIFFSetField(tif, TIFFTAG_UNIQUECAMERAMODEL, "Panasonic ICLE-7SM3"); //Fake model for testing Color !perfect!
-                    
+
                     // uint32_t activeArea[4] = {
                     //     [extendedPixelsTop unsignedIntValue],
                     //     [extendedPixelsLeft unsignedIntValue],
@@ -672,6 +673,7 @@ if (currentFrame == 0 && timecode.length > 0) {
                     TIFFSetField(tif, TIFFTAG_BLACKLEVEL, 1, &_blackLevel);
                     // Set Baseline Exposure
                     float32_t baselineExposure = log2([gainFactor floatValue]);
+                    // float baselineExposure = 0.0f;
                     TIFFSetField(tif, TIFFTAG_BASELINEEXPOSURE, baselineExposure);
                     
                     // Write image data

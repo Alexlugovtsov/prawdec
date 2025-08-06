@@ -25,7 +25,7 @@ Tested and works ONLY on M3 and maybe higher Apple Silicon Processors, because o
    ```
 
 2. **Install dependencies**  
-   Make sure `libtiff` is installed:
+   Make sure is installed:
    ```sh
    brew install libtiff
    brew install exiftool
